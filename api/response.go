@@ -31,3 +31,14 @@ func JSONError(w http.ResponseWriter, errMessage string, code int) {
 	}
 	json.NewEncoder(w).Encode(errResponseBody)
 }
+
+func JSONObjectError(w http.ResponseWriter, message interface{}, statusCode int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+
+	// Serialize and write the response
+	if err := json.NewEncoder(w).Encode(message); err != nil {
+		// In case of an encoding failure, write a fallback error response
+		http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
+	}
+}
