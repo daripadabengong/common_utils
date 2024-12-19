@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"strings"
 
 	"github.com/google/uuid"
 )
@@ -13,8 +12,13 @@ type EntityID struct {
 	value uuid.UUID
 }
 
-type PhoneNumber struct {
+type PhoneCountryCode struct {
 	value string
+}
+
+type PhoneNumber struct {
+	countryCode PhoneCountryCode
+	number      string
 }
 
 type EmailAddress struct {
@@ -29,8 +33,12 @@ type RequiredString struct {
 	value string
 }
 
-func (v EntityID) GetValue() uuid.UUID    { return v.value }
-func (v PhoneNumber) GetValue() string    { return v.value }
+func (v EntityID) GetValue() uuid.UUID      { return v.value }
+func (v PhoneCountryCode) GetValue() string { return v.value }
+func (v PhoneNumber) GetValue() string      { return v.number }
+func (v PhoneNumber) FullNumber() string {
+	return "+" + v.countryCode.value + v.number
+}
 func (v EmailAddress) GetValue() string   { return v.value }
 func (v NullableString) GetValue() string { return v.value }
 func (v RequiredString) GetValue() string { return v.value }
@@ -42,35 +50,28 @@ func NewEntityID(value uuid.UUID) (EntityID, error) {
 	return EntityID{value: value}, nil
 }
 
-func NewPhoneNumber(value string) (PhoneNumber, error) {
-	if value == "" {
+func NewPhoneCountryCode(value string) (PhoneCountryCode, error) {
+	if _, exists := countryCodeMap[value]; !exists {
+		return PhoneCountryCode{}, errors.New("invalid or unsupported country code")
+	}
+	return PhoneCountryCode{value: value}, nil
+}
+
+func NewPhoneNumber(countryCode PhoneCountryCode, number string) (PhoneNumber, error) {
+	if number == "" {
 		return PhoneNumber{}, errors.New("phone number can't be empty")
 	}
 
-	// Check if the phone number starts with "+"
-	if !strings.HasPrefix(value, "+") {
-		return PhoneNumber{}, errors.New("phone number must start with '+'")
+	// Validate the phone number (digits only)
+	regex := regexp.MustCompile(`^\d+$`)
+	if !regex.MatchString(number) {
+		return PhoneNumber{}, errors.New("phone number must contain only digits")
 	}
 
-	// Remove the "+" for easier processing
-	phoneWithoutPlus := value[1:]
-
-	// Match and extract the country code
-	regex := regexp.MustCompile(`^\d{1,3}`) // Matches up to 3 digits at the start
-	matches := regex.FindStringSubmatch(phoneWithoutPlus)
-	if len(matches) == 0 {
-		return PhoneNumber{}, errors.New("invalid phone number format")
-	}
-
-	countryCode := matches[0]
-
-	fmt.Println(countryCode)
-
-	// Validate the country code against the map
-	if _, exists := countryCodeMap[countryCode]; !exists {
-		return PhoneNumber{}, errors.New("invalid or unsupported country code")
-	}
-	return PhoneNumber{value: value}, nil
+	return PhoneNumber{
+		countryCode: countryCode,
+		number:      number,
+	}, nil
 }
 
 func NewEmailAddress(value string) (EmailAddress, error) {
