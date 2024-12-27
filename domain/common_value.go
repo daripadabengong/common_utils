@@ -33,9 +33,10 @@ type RequiredString struct {
 	value string
 }
 
-func (v EntityID) GetValue() uuid.UUID      { return v.value }
-func (v PhoneCountryCode) GetValue() string { return v.value }
-func (v PhoneNumber) GetValue() string      { return v.number }
+func (v EntityID) GetValue() uuid.UUID                 { return v.value }
+func (v PhoneCountryCode) GetValue() string            { return v.value }
+func (v PhoneNumber) GetValue() string                 { return v.number }
+func (v PhoneNumber) GetCountryCode() PhoneCountryCode { return v.countryCode }
 func (v PhoneNumber) FullNumber() string {
 	return "+" + v.countryCode.value + v.number
 }
