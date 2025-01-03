@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"regexp"
@@ -33,9 +34,41 @@ type RequiredString struct {
 	value string
 }
 
-func (v EntityID) GetValue() uuid.UUID                 { return v.value }
-func (v PhoneCountryCode) GetValue() string            { return v.value }
-func (v PhoneNumber) GetValue() string                 { return v.number }
+func (v EntityID) GetValue() uuid.UUID { return v.value }
+
+// Value implements the Valuer interface to convert EntityID to a UUID for the database.
+func (e EntityID) Value() (driver.Value, error) {
+	return e.value, nil
+}
+
+// Scan implements the Scanner interface to convert a database value back into EntityID.
+func (e *EntityID) Scan(src interface{}) error {
+	if src == nil {
+		return errors.New("null value found for EntityID")
+	}
+
+	switch v := src.(type) {
+	case []byte:
+		id, err := uuid.ParseBytes(v)
+		if err != nil {
+			return fmt.Errorf("invalid UUID format: %w", err)
+		}
+		e.value = id
+	case string:
+		id, err := uuid.Parse(v)
+		if err != nil {
+			return fmt.Errorf("invalid UUID format: %w", err)
+		}
+		e.value = id
+	default:
+		return errors.New("EntityID must be a string or []byte")
+	}
+
+	return nil
+}
+
+func (v PhoneCountryCode) GetValue() string { return v.value }
+func (v PhoneNumber) GetValue() string      { return v.number }
 func (v PhoneNumber) GetCountryCode() PhoneCountryCode { return v.countryCode }
 func (v PhoneNumber) FullNumber() string {
 	return v.countryCode.value + v.number
