@@ -38,7 +38,7 @@ func (v PhoneCountryCode) GetValue() string            { return v.value }
 func (v PhoneNumber) GetValue() string                 { return v.number }
 func (v PhoneNumber) GetCountryCode() PhoneCountryCode { return v.countryCode }
 func (v PhoneNumber) FullNumber() string {
-	return "+" + v.countryCode.value + v.number
+	return v.countryCode.value + v.number
 }
 func (v EmailAddress) GetValue() string   { return v.value }
 func (v NullableString) GetValue() string { return v.value }
